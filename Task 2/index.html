@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac AI</title>
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="index.css">
 </head>
-<link rel="stylesheet" href="index.css">
 <body>
-        <h1>Tic Tac AI</h1>
-    <div class="container">
-        <div class="box" id="b1"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b2"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b3"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b4"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b5"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b6"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b7"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b8"><p></p><input type="button" value=" "></div>
-        <div class="box" id="b9"><p></p><input type="button" value=" "></div>
+    <div class="game">
+        <div class="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button id="reset">Restart Game</button>
     </div>
     <script src="script.js"></script>
 </body>

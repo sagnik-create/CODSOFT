@@ -1,29 +1,118 @@
-// DOM definitions
-b1 = document.getElementById("b1")
-b2 = document.getElementById("b2")
-b3 = document.getElementById("b3")
-b4 = document.getElementById("b4")
-b5 = document.getElementById("b5")
-b6 = document.getElementById("b6")
-b7 = document.getElementById("b7")
-b8 = document.getElementById("b8")
-b9 = document.getElementById("b9")
+document.addEventListener('DOMContentLoaded', () => {
+    const cells = document.querySelectorAll('.cell');
+    const resetButton = document.getElementById('reset');
+    const player = 'X';
+    const ai = 'O';
+    let board = Array(9).fill('');
 
-b1btn = b1.value = "X"
+    cells.forEach(cell => {
+        cell.addEventListener('click', handleCellClick);
+    });
 
-// function movechecker(){
-//     for (let index = 0; index < 9; index++) {
-//         let flag = 1;
-//         if (flag == 1) {
-//             team = 'X'
-//             flag = 0;
-//         }
+    resetButton.addEventListener('click', resetGame);
 
-//         else( ) {
-//             team = 'O'
-//             flag = 1;
-//         }
-        
-//     }
-// }
+    function handleCellClick(event) {
+        const index = event.target.getAttribute('data-index');
+        if (board[index] === '') {
+            makeMove(index, player);
+            if (!isGameOver(board)) {
+                const bestMove = getBestMove(board, ai);
+                console.log("AI chose index: ", bestMove);
+                makeMove(bestMove, ai);
+            }
+        }
+    }
 
+    function makeMove(index, player) {
+        board[index] = player;
+        cells[index].textContent = player;
+    }
+
+    function resetGame() {
+        board = Array(9).fill('');
+        cells.forEach(cell => {
+            cell.textContent = '';
+        });
+    }
+
+    function isGameOver(board) {
+        const winner = getWinner(board);
+        if (winner) {
+            console.log("Winner: ", winner);
+        }
+        return winner || board.every(cell => cell !== '');
+    }
+
+    function getWinner(board) {
+        const winPatterns = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        for (const pattern of winPatterns) {
+            const [a, b, c] = pattern;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                return board[a];
+            }
+        }
+
+        return null;
+    }
+
+    function getBestMove(board, player) {
+        const availableSpots = board.reduce((acc, cell, index) => {
+            if (cell === '') acc.push(index);
+            return acc;
+        }, []);
+    
+        if (getWinner(board) === player) return { score: 10 };
+        if (getWinner(board) === 'X') return { score: -10 };
+        if (availableSpots.length === 0) return { score: 0 };
+    
+        const moves = [];
+    
+        for (const spot of availableSpots) {
+            const move = {};
+            move.index = spot;
+            board[spot] = player;
+    
+            if (player === 'O') {
+                const result = getBestMove(board, 'X');
+                move.score = result.score;
+            } else {
+                const result = getBestMove(board, 'O');
+                move.score = result.score;
+            }
+    
+            board[spot] = '';
+            moves.push(move);
+        }
+    
+        let bestMove;
+        if (player === 'O') {
+            let bestScore = -Infinity;
+            for (const move of moves) {
+                if (move.score > bestScore) {
+                    bestScore = move.score;
+                    bestMove = move.index;
+                }
+            }
+        } else {
+            let bestScore = Infinity;
+            for (const move of moves) {
+                if (move.score < bestScore) {
+                    bestScore = move.score;
+                    bestMove = move.index;
+                }
+            }
+        }
+    
+        return bestMove;
+    }
+});
