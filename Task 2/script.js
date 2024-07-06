@@ -1,118 +1,94 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const cells = document.querySelectorAll('.cell');
-    const resetButton = document.getElementById('reset');
-    const player = 'X';
-    const ai = 'O';
-    let board = Array(9).fill('');
-
-    cells.forEach(cell => {
-        cell.addEventListener('click', handleCellClick);
-    });
-
-    resetButton.addEventListener('click', resetGame);
-
-    function handleCellClick(event) {
-        const index = event.target.getAttribute('data-index');
-        if (board[index] === '') {
-            makeMove(index, player);
-            if (!isGameOver(board)) {
-                const bestMove = getBestMove(board, ai);
-                console.log("AI chose index: ", bestMove);
-                makeMove(bestMove, ai);
+class TicTacToe {
+    constructor() {
+        this.board = Array(9).fill(0); // 0 means "empty"
+        this.moves = [];
+        this.isWin = this.isDraw = false;
+    }
+    get turn() { // returns 1 or 2
+        return 1 + this.moves.length % 2;
+    }
+    get validMoves() {
+        return [...this.board.keys()].filter(i => !this.board[i])
+    }
+    play(move) { // move is an index in this.board
+        if (this.board[move] !== 0 || this.isWin) return false; // invalid move
+        this.board[move] = this.turn; // 1 or 2
+        this.moves.push(move);
+        // Use regular expression to detect any 3-in-a-row
+        this.isWin = /^(?:...)*([12])\1\1|^.?.?([12])..\2..\2|^([12])...\3...\3|^..([12]).\4.\4/.test(this.board.join(""));
+        this.isDraw = !this.isWin && this.moves.length === this.board.length;
+        return true;
+    }
+    takeBack() {
+        if (this.moves.length === 0) return false; // cannot undo
+        this.board[this.moves.pop()] = 0;
+        this.isWin = this.isDraw = false;
+        return true;
+    }
+    minimax() {
+        if (this.isWin) return { value: -10 };
+        if (this.isDraw) return { value: 0 };
+        let best = { value: -Infinity };
+        for (let move of this.validMoves) {
+            this.play(move);
+            let {value} = this.minimax();
+            this.takeBack();
+            // Reduce magnitude of value (so shorter paths to wins are prioritised) and negate it
+            value = value ? (Math.abs(value) - 1) * Math.sign(-value) : 0;
+            if (value >= best.value) {
+                if (value > best.value) best = { value, moves: [] };
+                best.moves.push(move); // keep track of equally valued moves
             }
         }
+        return best;
+    }
+    goodMove() {
+        let {moves} = this.minimax();
+        // Pick a random move when there are choices:
+        return moves[Math.floor(Math.random() * moves.length)];
+    }
+}
+
+(function main() {
+    const table = document.querySelector("#game");
+    const btnNewGame = document.querySelector("#newgame");
+    const btnCpuMove = document.querySelector("#cpumove");
+    const messageArea = document.querySelector("#message");
+    let game, human;
+
+    function display() {
+        game.board.forEach((cell, i) => table.rows[Math.floor(i / 3)].cells[i % 3].className = " XO"[cell]);
+        messageArea.textContent = game.isWin ? (game.turn == human ? "CPU won" : "You won")
+                                : game.isDraw ? "It's a draw"
+                                : game.turn == human ? "Your turn" 
+                                : "CPU is preparing move...";
+        table.className = game.isWin || game.isDraw || game.turn !== human ? "inactive" : "";
     }
 
-    function makeMove(index, player) {
-        board[index] = player;
-        cells[index].textContent = player;
+    function computerMove() {
+        if (game.isWin || game.isDraw) return; 
+        human = 3 - game.turn;
+        display();
+        setTimeout(() => {
+            game.play(game.goodMove());
+            display();
+        }, 500); // Artificial delay before computer move is calculated and played
     }
 
-    function resetGame() {
-        board = Array(9).fill('');
-        cells.forEach(cell => {
-            cell.textContent = '';
-        });
+    function humanMove(i) {
+        if (game.turn !== human || !game.play(i)) return; // ignore click when not human turn, or when invalid move
+        display();
+        computerMove();
     }
 
-    function isGameOver(board) {
-        const winner = getWinner(board);
-        if (winner) {
-            console.log("Winner: ", winner);
-        }
-        return winner || board.every(cell => cell !== '');
+    function newGame() {
+        game = new TicTacToe();
+        human = 1;
+        display();
     }
 
-    function getWinner(board) {
-        const winPatterns = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
-        ];
-
-        for (const pattern of winPatterns) {
-            const [a, b, c] = pattern;
-            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                return board[a];
-            }
-        }
-
-        return null;
-    }
-
-    function getBestMove(board, player) {
-        const availableSpots = board.reduce((acc, cell, index) => {
-            if (cell === '') acc.push(index);
-            return acc;
-        }, []);
-    
-        if (getWinner(board) === player) return { score: 10 };
-        if (getWinner(board) === 'X') return { score: -10 };
-        if (availableSpots.length === 0) return { score: 0 };
-    
-        const moves = [];
-    
-        for (const spot of availableSpots) {
-            const move = {};
-            move.index = spot;
-            board[spot] = player;
-    
-            if (player === 'O') {
-                const result = getBestMove(board, 'X');
-                move.score = result.score;
-            } else {
-                const result = getBestMove(board, 'O');
-                move.score = result.score;
-            }
-    
-            board[spot] = '';
-            moves.push(move);
-        }
-    
-        let bestMove;
-        if (player === 'O') {
-            let bestScore = -Infinity;
-            for (const move of moves) {
-                if (move.score > bestScore) {
-                    bestScore = move.score;
-                    bestMove = move.index;
-                }
-            }
-        } else {
-            let bestScore = Infinity;
-            for (const move of moves) {
-                if (move.score < bestScore) {
-                    bestScore = move.score;
-                    bestMove = move.index;
-                }
-            }
-        }
-    
-        return bestMove;
-    }
-});
+    table.addEventListener("click", e => humanMove(e.target.cellIndex + 3 * e.target.parentNode.rowIndex));
+    btnNewGame.addEventListener("click", newGame);
+    btnCpuMove.addEventListener("click", computerMove);
+    newGame();
+})();
